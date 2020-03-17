@@ -10,12 +10,12 @@
   version = "v3.2.0"
 
 [[projects]]
-  digest = "1:bf618941b014c2a86e4a6f39d4a26541c06fc63387fc50d4694d67eac2151f4a"
+  digest = "1:8466ad3bbf246e5f511de17d7d66089aa5388be2272cee17a71fe5d1ccda4c64"
   name = "github.com/labstack/echo"
   packages = ["."]
   pruneopts = "UT"
-  revision = "38772c686c76b501f94bd6cd5b77f5842e93b559"
-  version = "v3.3.10"
+  revision = "3e8a797db0fed880ba5399b6e0eb2e49185d40ee"
+  version = "v4.1.15"
 
 [[projects]]
   digest = "1:9bc108827ac1d8783dea294f1ef07732fa4ca7d6e20518c04888a85828eba4ce"
@@ -62,30 +62,38 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9a9cf26f20c88b890e03544ed6fc8b04f59f6d618e32a4de2b4b23f61d344580"
+  digest = "1:e4418522cf2a46b9c035a832f784f9f3e30136ca276b59c9bf4de3d98acf78ac"
   name = "golang.org/x/crypto"
   packages = [
     "acme",
     "acme/autocert",
+    "bcrypt",
+    "blowfish",
   ]
   pruneopts = "UT"
-  revision = "f7b00557c8c46a1ea4b035cae84f52028c2c0564"
+  revision = "1b76d66859c6111b3d5c3ea6600ea44dc188bf12"
 
 [[projects]]
   branch = "master"
-  digest = "1:d1f7edf951b9cc444358a31de2f4e4c1c5c539ea9c6aca13f5bf92eb1124fc4b"
+  digest = "1:2c1b9d42fc9a4b41bcb4c804ec0d2526f1c8caec8b4b39897c0dae520f8960b3"
   name = "golang.org/x/net"
-  packages = ["idna"]
+  packages = [
+    "http/httpguts",
+    "http2",
+    "http2/h2c",
+    "http2/hpack",
+    "idna",
+  ]
   pruneopts = "UT"
   revision = "244492dfa37ae2ce87222fd06250a03160745faa"
 
 [[projects]]
   branch = "master"
-  digest = "1:fca5631af35527538c4c3501de376df22e6fb4112c2004c55e9213c184bc8835"
+  digest = "1:3db6d378edb70703966c0eebd90a98884b8a8985c146d07fa15ca7ef6d91fe4c"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "a7d97aace0b03bedead413ec782269d62e032341"
+  revision = "5766fd39f98ddd8d769ad4aedcee557dd28de90f"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -118,6 +126,7 @@
   input-imports = [
     "github.com/dgrijalva/jwt-go",
     "github.com/labstack/echo",
+    "golang.org/x/crypto/bcrypt",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
