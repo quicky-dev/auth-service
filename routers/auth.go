@@ -6,6 +6,5 @@ import (
 )
 
 func AttachAuth(app *echo.Echo) {
-	authRouter := echo.NewRouter(app)
-	authRouter.Add(echo.POST, "/auth/register", controllers.Register)
+	app.POST("/auth/register", controllers.Register)
 }
