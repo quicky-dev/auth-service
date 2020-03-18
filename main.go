@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/labstack/echo"
@@ -9,6 +10,7 @@ import (
 
 // Main entry point for the auth service.
 func main() {
+	log.SetPrefix("[auth] ")
 	app := echo.New()
 
 	app.GET("/", func(c echo.Context) error {
