@@ -4,6 +4,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// TODO: Experiment with the cost value to see if we can increase security
+// while maintaining speed.
 func HashAndSaltPassword(password string) (string, error) {
 	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), 16)
 
