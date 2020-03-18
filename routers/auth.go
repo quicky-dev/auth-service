@@ -5,6 +5,7 @@ import (
 	"github.com/quicky-dev/auth-service/controllers"
 )
 
-func AttachAuth(app *echo.Echo) {
+// AttachAuth attaches all auth endpoints to the main echo instance
+func RegisterAuthRoutes(app *echo.Echo) {
 	app.POST("/auth/register", controllers.Register)
 }
