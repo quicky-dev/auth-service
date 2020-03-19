@@ -25,7 +25,11 @@ func Register(c echo.Context) error {
 		return c.JSON(400, AuthError{"The body doesn't match RegisterCredentials"})
 	}
 
-	user, err := registerRequestToUnverifiedUser(credentials)
+	if err := credentials.validateFields(); err != nil {
+		return c.JSON(400, AuthError{err.Error()})
+	}
+
+	user, err := credentials.toUnverifiedUser()
 
 	if err != nil {
 		log.Println(err.Error())
