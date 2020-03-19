@@ -42,6 +42,22 @@ func Register(c echo.Context) error {
 	return c.String(http.StatusOK, formatVerificationURL(user.VerificationCode, objectID))
 }
 
+func VerifyEmail(c echo.Context) error {
+	verificationCode := c.QueryParam("v")
+	userID := c.QueryParam("u")
+
+	userID, err := db.VerifyEmailForUser(userID, verificationCode)
+
+	if err != nil {
+		log.Println(err.Error())
+		return c.JSON(http.StatusForbidden, AuthError{err.Error()})
+	}
+
+	log.Println(userID)
+
+	return c.String(http.StatusOK, "Verified")
+}
+
 // Login a pre existing user
 func Login(c echo.Context) error {
 	return c.String(http.StatusOK, "Hello, world!")
