@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/quicky-dev/auth-service/util"
+	"go.mongodb.org/mongo-driver/bson"
 	"log"
 	"time"
 )
@@ -16,6 +17,16 @@ type UnverifiedUser struct {
 	Password         string    `bson:"password"`
 	VerificationCode string    `bson:"verificationCode"`
 	ExpirationDate   time.Time `bson:"expirationDate"`
+}
+
+func (this UnverifiedUser) toVerifiedUser() *VerifiedUser {
+	verifiedUser := new(VerifiedUser)
+
+	verifiedUser.Username = this.Username
+	verifiedUser.Email = this.Email
+	verifiedUser.Password = this.Password
+
+	return verifiedUser
 }
 
 func CreateUnverifiedUser(user *UnverifiedUser) (string, error) {
@@ -31,6 +42,31 @@ func CreateUnverifiedUser(user *UnverifiedUser) (string, error) {
 
 	if userID == "" {
 		return "", fmt.Errorf("Couldn't obtain the ObjectID for user: %s", user.Username)
+	}
+
+	return userID, nil
+}
+
+func VerifyEmailForUser(objectID string, verificationCode string) (string, error) {
+	objectIDHex, err := util.GetObjectIDFromString(objectID)
+
+	if err != nil {
+		return "", err
+	}
+
+	filter := bson.M{"_id": objectIDHex, "verificationCode": verificationCode}
+	user := new(UnverifiedUser)
+
+	err = unverifiedUsers.FindOneAndDelete(context.TODO(), filter).Decode(user)
+
+	if err != nil {
+		return "", err
+	}
+
+	userID, err := CreateVerifiedUser(user.toVerifiedUser())
+
+	if err != nil {
+		return "", err
 	}
 
 	return userID, nil
