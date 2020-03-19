@@ -9,15 +9,15 @@ import (
 )
 
 func obtainDatabaseClient() *mongo.Client {
-	credentials := new(options.Credential)
+	clientOptions := new(options.ClientOptions)
 
-	if os.Getenv("PRODUCTION_MODE") == "" {
+	if os.Getenv("PRODUCTION_MODE") != "" {
+		credentials := new(options.Credential)
 		credentials.Username = os.Getenv("AUTH_DB_USER")
 		credentials.Password = os.Getenv("AUTH_DB_PASSWORD")
+		clientOptions.Auth = credentials
 	}
 
-	clientOptions := new(options.ClientOptions)
-	clientOptions.Auth = credentials
 	clientOptions.ApplyURI(os.Getenv("MONGODB_URI"))
 
 	err := clientOptions.Validate()
