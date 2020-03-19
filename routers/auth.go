@@ -7,5 +7,6 @@ import (
 
 // AttachAuth attaches all auth endpoints to the main echo instance
 func RegisterAuthRoutes(app *echo.Echo) {
-	app.POST("/auth/register", auth.Register)
+	app.POST("/register", auth.Register)
+	app.GET("/verify/email", auth.VerifyEmail)
 }
