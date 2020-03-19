@@ -14,3 +14,13 @@ func GetObjectIdFromInsertion(insertedID interface{}) string {
 
 	return objectID.Hex()
 }
+
+func GetObjectIDFromString(objectID string) (primitive.ObjectID, error) {
+	objectIDHex, err := primitive.ObjectIDFromHex(objectID)
+
+	if err != nil {
+		return primitive.ObjectID{}, err
+	}
+
+	return objectIDHex, nil
+}
