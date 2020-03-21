@@ -2,72 +2,82 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/quicky-dev/auth-service/util"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	"time"
 )
 
-var unverifiedUsers = util.MongoClient.Database("Accounts").Collection("UnverifiedUsers")
+var users = util.MongoClient.Database("Auth").Collection("Users")
 
-type UnverifiedUser struct {
-	Username         string    `bson:"username"`
-	Email            string    `bson:"email"`
-	Password         string    `bson:"password"`
-	VerificationCode string    `bson:"verificationCode"`
-	ExpirationDate   time.Time `bson:"expirationDate"`
+type User struct {
+	ID                         primitive.ObjectID `bson: "_id, omitempty"`
+	Username                   string             `bson:"thisname"`
+	Email                      string             `bson:"email"`
+	Password                   string             `bson:"password"`
+	Verified                   bool               `bson:"verified"`
+	VerificationCode           string             `bson:"verificationCode"`
+	VerificationExpirationDate time.Time          `bson:"verificationExpirationDate"`
+	LastSignIn                 time.Time          `bson:"lastSignIn"`
+	CreatedAt                  time.Time          `bson:"createdAt"`
 }
 
-func (this UnverifiedUser) toVerifiedUser() *VerifiedUser {
-	verifiedUser := new(VerifiedUser)
-
-	verifiedUser.Username = this.Username
-	verifiedUser.Email = this.Email
-	verifiedUser.Password = this.Password
-
-	return verifiedUser
-}
-
-func CreateUnverifiedUser(user *UnverifiedUser) (string, error) {
-	user.ExpirationDate = time.Now().AddDate(0, 0, 1)
-	insertion, err := unverifiedUsers.InsertOne(context.TODO(), user)
+func (this *User) Save() (string, error) {
+	insertion, err := users.InsertOne(context.TODO(), this)
 
 	if err != nil {
 		log.Printf(err.Error())
-		log.Printf("Couldn't create the verified user: %s", user.Username)
+		log.Printf("Couldn't create the verified this: %s", this.Username)
 	}
 
-	userID := util.GetObjectIdFromInsertion(insertion.InsertedID)
+	thisID := util.GetObjectIdFromInsertion(insertion.InsertedID)
 
-	if userID == "" {
-		return "", fmt.Errorf("Couldn't obtain the ObjectID for user: %s", user.Username)
+	if thisID == "" {
+		return "", fmt.Errorf("Couldn't obtain the ObjectID for this: %s", this.Username)
 	}
 
-	return userID, nil
+	return thisID, nil
 }
 
-func VerifyEmailForUser(objectID string, verificationCode string) (string, error) {
+func (this *User) VerifyEmail(objectID string, verificationCode string) (bool, error) {
 	objectIDHex, err := util.GetObjectIDFromString(objectID)
 
 	if err != nil {
-		return "", err
+		return false, err
 	}
 
-	filter := bson.M{"_id": objectIDHex, "verificationCode": verificationCode}
-	user := new(UnverifiedUser)
+	filter := bson.M{"_id": objectIDHex, "verificationCode": verificationCode,
+		"verified": false, "verificationExpirationDate": bson.D{{"$gt", time.Now()}}}
+	update := bson.D{{"$set", bson.M{"verified": true, "verificationExpirationDate": time.Time{}}}}
+	log.Println(filter)
 
-	err = unverifiedUsers.FindOneAndDelete(context.TODO(), filter).Decode(user)
+	err = users.FindOneAndUpdate(context.TODO(), filter, update).Decode(&this)
 
 	if err != nil {
-		return "", err
+		return false, err
 	}
 
-	userID, err := CreateVerifiedUser(user.toVerifiedUser())
+	return true, nil
+}
 
+func (this *User) Login() error {
+	filter := bson.M{"username": this.Username}
+	foundUser := new(User)
+
+	err := users.FindOne(context.TODO(), filter).Decode(&foundUser)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return userID, nil
+	success := util.ComparePasswordWithHash(this.Password, foundUser.Password)
+
+	if success {
+		this = foundUser
+		return nil
+	}
+
+	return errors.New("Could not successfully login.")
 }
