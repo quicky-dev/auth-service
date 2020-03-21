@@ -2,6 +2,7 @@ package util
 
 import (
 	"golang.org/x/crypto/bcrypt"
+	"log"
 )
 
 // TODO: Experiment with the cost value to see if we can increase security
@@ -16,10 +17,14 @@ func HashAndSaltPassword(password string) (string, error) {
 	return string(hashedBytes), nil
 }
 
+// TODO: Differentiate the type of possible errors that could arise from
+// comparing a password. I.E., being able to
+// For example,
 func ComparePasswordWithHash(password string, hashedPassword string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 
 	if err != nil {
+		log.Println(err)
 		return false
 	}
 
