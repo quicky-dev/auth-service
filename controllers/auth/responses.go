@@ -1,5 +1,13 @@
 package auth
 
-type AuthError struct {
+type authError struct {
 	ErrorMsg string `json:"errorMessage"`
+}
+
+type verifyEmailResponse struct {
+	Username string `json:"username"`
+}
+
+type loginResponse struct {
+	Username string `json:"username"`
 }
