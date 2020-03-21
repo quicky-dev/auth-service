@@ -11,7 +11,7 @@ import (
 
 var jwtKey = []byte(os.Getenv("JWT_SECRET_KEY"))
 
-type Claims struct {
+type claims struct {
 	Username string `json:"username"`
 	Uid      string `json:"uid"`
 	jwt.StandardClaims
@@ -19,28 +19,28 @@ type Claims struct {
 
 // Register a new user
 func Register(c echo.Context) error {
-	credentials := new(RegisterRequest)
+	credentials := new(registerRequest)
 
 	if err := c.Bind(credentials); err != nil {
-		return c.JSON(400, AuthError{"The body doesn't match RegisterCredentials"})
+		return c.JSON(400, authError{"The body doesn't match RegisterCredentials"})
 	}
 
-	if err := credentials.validateFields(); err != nil {
-		return c.JSON(400, AuthError{err.Error()})
+	if err := credentials.ValidateFields(); err != nil {
+		return c.JSON(400, authError{err.Error()})
 	}
 
-	user, err := credentials.toUnverifiedUser()
+	user, err := credentials.ToUser()
 
 	if err != nil {
 		log.Println(err.Error())
-		return c.JSON(500, AuthError{err.Error()})
+		return c.JSON(500, authError{err.Error()})
 	}
 
-	objectID, err := db.CreateUnverifiedUser(user)
+	objectID, err := user.Save()
 
 	if err != nil {
 		log.Println(err.Error())
-		return c.JSON(500, AuthError{err.Error()})
+		return c.JSON(500, authError{err.Error()})
 	}
 
 	return c.String(http.StatusOK, formatVerificationURL(user.VerificationCode, objectID))
@@ -50,21 +50,44 @@ func VerifyEmail(c echo.Context) error {
 	verificationCode := c.QueryParam("v")
 	userID := c.QueryParam("u")
 
-	userID, err := db.VerifyEmailForUser(userID, verificationCode)
+	user := new(db.User)
+	_, err := user.VerifyEmail(userID, verificationCode)
 
 	if err != nil {
 		log.Println(err.Error())
-		return c.JSON(http.StatusForbidden, AuthError{err.Error()})
+		return c.JSON(http.StatusForbidden, authError{err.Error()})
 	}
 
-	log.Println(userID)
+	log.Printf("Verified account for: %s", user.Username)
 
-	return c.String(http.StatusOK, "Verified")
+	return c.JSON(http.StatusOK, verifyEmailResponse{user.Username})
 }
 
 // Login a pre existing user
 func Login(c echo.Context) error {
-	return c.String(http.StatusOK, "Hello, world!")
+	credentials := new(loginRequest)
+
+	if err := c.Bind(credentials); err != nil {
+		return c.JSON(400, authError{"The body is malformed."})
+	}
+
+	if err := credentials.ValidateFields(); err != nil {
+		return c.JSON(400, authError{err.Error()})
+	}
+
+	user, err := credentials.ToUser()
+
+	if err != nil {
+		return c.JSON(400, authError{err.Error()})
+	}
+
+	err = user.Login()
+
+	if err != nil {
+		return c.JSON(400, authError{"Login failed."})
+	}
+
+	return c.JSON(http.StatusOK, loginResponse{user.Username})
 }
 
 // Refresh a users jwt token. This will keep users tokens in rotation and keep
