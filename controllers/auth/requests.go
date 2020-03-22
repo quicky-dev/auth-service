@@ -3,8 +3,6 @@ package auth
 import (
 	"errors"
 	"github.com/quicky-dev/auth-service/db"
-	"github.com/quicky-dev/auth-service/util"
-	"time"
 )
 
 // ---------------------------------- REGISTER ---------------------------------
@@ -39,28 +37,13 @@ func (this *registerRequest) ValidateFields() error {
 	return nil
 }
 
-func (this *registerRequest) ToUser() (*db.User, error) {
+func (this *registerRequest) ToUser() *db.User {
 	user := new(db.User)
 	user.Username = this.Username
 	user.Email = this.Email
-	hashedPassword, err := util.HashAndSaltPassword(this.Password)
+	user.Password = this.Password
 
-	if err != nil {
-		return &db.User{}, err
-	}
-
-	user.Password = hashedPassword
-
-	generatedString, err := util.GenerateRandomString(64)
-	if err != nil {
-		return &db.User{}, err
-	}
-
-	user.VerificationCode = generatedString
-	user.VerificationExpirationDate = time.Now().AddDate(0, 0, 2)
-	user.Verified = false
-
-	return user, nil
+	return user
 }
 
 // ------------------------------------ LOGIN ----------------------------------
@@ -90,11 +73,11 @@ func (this *loginRequest) ValidateFields() error {
 	return nil
 }
 
-func (this *loginRequest) ToUser() (*db.User, error) {
+func (this *loginRequest) ToUser() *db.User {
 	user := new(db.User)
 
 	user.Username = this.Username
 	user.Password = this.Password
 
-	return user, nil
+	return user
 }

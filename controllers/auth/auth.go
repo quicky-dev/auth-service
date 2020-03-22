@@ -7,40 +7,29 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 var jwtKey = []byte(os.Getenv("JWT_SECRET_KEY"))
-
-type claims struct {
-	Username string `json:"username"`
-	Uid      string `json:"uid"`
-	jwt.StandardClaims
-}
 
 // Register a new user
 func Register(c echo.Context) error {
 	credentials := new(registerRequest)
 
 	if err := c.Bind(credentials); err != nil {
-		return c.JSON(400, authError{"The body doesn't match RegisterCredentials"})
+		return c.JSON(http.StatusBadRequest, authError{"The body doesn't match RegisterCredentials"})
 	}
 
 	if err := credentials.ValidateFields(); err != nil {
-		return c.JSON(400, authError{err.Error()})
+		return c.JSON(http.StatusBadRequest, authError{err.Error()})
 	}
 
-	user, err := credentials.ToUser()
-
-	if err != nil {
-		log.Println(err.Error())
-		return c.JSON(500, authError{err.Error()})
-	}
-
+	user := credentials.ToUser()
 	objectID, err := user.Save()
 
 	if err != nil {
 		log.Println(err.Error())
-		return c.JSON(500, authError{err.Error()})
+		return c.JSON(http.StatusInternalServerError, authError{err.Error()})
 	}
 
 	return c.String(http.StatusOK, formatVerificationURL(user.VerificationCode, objectID))
@@ -68,24 +57,49 @@ func Login(c echo.Context) error {
 	credentials := new(loginRequest)
 
 	if err := c.Bind(credentials); err != nil {
-		return c.JSON(400, authError{"The body is malformed."})
+		return c.JSON(http.StatusBadRequest, authError{"The body is malformed."})
 	}
 
 	if err := credentials.ValidateFields(); err != nil {
-		return c.JSON(400, authError{err.Error()})
+		return c.JSON(http.StatusBadRequest, authError{err.Error()})
 	}
 
-	user, err := credentials.ToUser()
-
-	if err != nil {
-		return c.JSON(400, authError{err.Error()})
-	}
-
-	err = user.Login()
+	// Convert the request to a user and then attempt to login with that user.
+	user := credentials.ToUser()
+	err := user.Login()
 
 	if err != nil {
 		return c.JSON(400, authError{"Login failed."})
 	}
+
+	expirationTime := time.Now().Add(10 * time.Minute)
+	claims := &claims{
+		Username: user.Username,
+		ID:       user.ID.Hex(),
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtKey)
+
+	if err != nil {
+		return c.JSON(
+			http.StatusInternalServerError,
+			authError{"Couldn't issue an access token."})
+	}
+
+	c.SetCookie(&http.Cookie{
+		Name:    "access-token",
+		Value:   tokenString,
+		Expires: expirationTime,
+	})
+
+	c.SetCookie(&http.Cookie{
+		Name:  "refresh-token",
+		Value: user.RefreshToken,
+	})
 
 	return c.JSON(http.StatusOK, loginResponse{user.Username})
 }
