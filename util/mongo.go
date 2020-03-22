@@ -1,7 +1,9 @@
 package util
 
 import (
+	"errors"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func GetObjectIdFromInsertion(insertedID interface{}) string {
@@ -23,4 +25,16 @@ func GetObjectIDFromString(objectID string) (primitive.ObjectID, error) {
 	}
 
 	return objectIDHex, nil
+}
+
+func ConvertMongoErrorToAPIError(err error) error {
+	mongoErr := err.(mongo.WriteException)
+	mongoErrCode := mongoErr.WriteErrors[0].Code
+
+	switch mongoErrCode {
+	case 11000:
+		return errors.New("Username already exists.")
+	default:
+		return errors.New("Internal Server error.")
+	}
 }
