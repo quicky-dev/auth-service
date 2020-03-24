@@ -15,3 +15,7 @@ type loginResponse struct {
 type refreshTokenResponse struct {
 	Username string `json:"username"`
 }
+
+type verifyTokenResponse struct {
+	ValidToken bool `json:"validToken"`
+}

@@ -96,3 +96,8 @@ func (this *jwtClaims) ToUser() *db.User {
 	user.Username = this.Username
 	return user
 }
+
+// ----------------------------------- VERIFY ----------------------------------
+type verifyTokenRequest struct {
+	JwtString string `json:"jwtString"`
+}

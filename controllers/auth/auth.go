@@ -177,9 +177,29 @@ func RefreshToken(c echo.Context) error {
 
 // Verify a users token.
 func VerifyToken(c echo.Context) error {
-	accessCookie, err := c.Cookie("access-token")
-	if err != nil {
-		return c.JSON(http.StatusUnauthorized, authError{"The user isn't currently signed in"})
+	verifyTokenReq := new(verifyTokenRequest)
+
+	if err := c.Bind(verifyTokenReq); err != nil {
+		return c.JSON(http.StatusBadRequest, authError{"The body doesn't match RegisterCredentials"})
 	}
-	return c.String(http.StatusOK, "Hello world")
+
+	claims := &jwtClaims{}
+	token, err := jwt.ParseWithClaims(
+		verifyTokenReq.JwtString,
+		claims,
+		func(token *jwt.Token) (interface{}, error) {
+			return jwtKey, nil
+		})
+
+	if err == jwt.ErrSignatureInvalid {
+		return c.JSON(http.StatusUnauthorized, verifyTokenResponse{false})
+	} else if err != nil {
+		return c.JSON(http.StatusBadRequest, verifyTokenResponse{false})
+	}
+
+	if !token.Valid {
+		return c.JSON(http.StatusUnauthorized, verifyTokenResponse{false})
+	}
+
+	return c.JSON(http.StatusOK, verifyTokenResponse{true})
 }
