@@ -14,4 +14,5 @@ func RegisterAuthRoutes(app *echo.Echo) {
 	// POST
 	app.POST("/register", auth.Register)
 	app.POST("/login", auth.Login)
+	app.POST("/verify/token", auth.VerifyToken)
 }
