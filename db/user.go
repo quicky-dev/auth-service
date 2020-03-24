@@ -125,8 +125,8 @@ func (this *User) VerifyEmail(objectID string, verificationCode string) (bool, e
 // Login the user by verifying that the user exists and that the hashed & salted
 // password matches the hashed and salted password sent from the login request.
 func (this *User) Login() error {
-	filter := bson.M{"username": this.Username}
 	foundUser := new(User)
+	filter := bson.M{"username": this.Username}
 
 	if err := users.FindOne(context.TODO(), filter).Decode(&foundUser); err != nil {
 		err = util.ConvertMongoErrorToAPIError(err)
@@ -150,18 +150,53 @@ func (this *User) Login() error {
 	updateRefreshToken := bson.D{{"$set", bson.M{"refreshToken": generatedString, "lastSignIn": time.Now()}}}
 
 	err = users.FindOneAndUpdate(
-		context.TODO(), filter, updateRefreshToken).Decode(&foundUser)
+		context.TODO(),
+		filter,
+		updateRefreshToken,
+		options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&this)
 
 	if err != nil {
 		return err
 	}
 
-	this = foundUser
 	return nil
 }
 
 // Get a new refresh token for a user given that the current refresh token
 // being used is valid.
-func (this *User) GetNewRefreshToken(currentRefreshToken string) error {
+func (this *User) ValidateAndReplaceToken(receivedRefreshToken string) error {
+	foundUser := new(User)
+
+	filter := bson.M{"username": this.Username}
+
+	err := users.FindOne(context.TODO(), filter).Decode(&foundUser)
+	if err != nil {
+		return err
+	}
+
+	if time.Now().Sub(foundUser.LastSignIn) > 5*24*time.Hour {
+		return errors.New("User has not signed in for 5 days. Force login.")
+	}
+
+	if foundUser.RefreshToken != receivedRefreshToken {
+		return errors.New("The refresh tokens do not match. Can't issue new one.")
+	}
+
+	generatedString, err := util.GenerateRandomString(48)
+	if err != nil {
+		return errors.New("Couldn't issue a refresh token.")
+	}
+
+	updateRefreshToken := bson.D{{"$set", bson.M{"refreshToken": generatedString}}}
+	err = users.FindOneAndUpdate(
+		context.TODO(),
+		filter,
+		updateRefreshToken,
+		options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&this)
+
+	if err != nil {
+		return errors.New("Couldn't update the auth token for the new user. Sign in or try again.")
+	}
+
 	return nil
 }
