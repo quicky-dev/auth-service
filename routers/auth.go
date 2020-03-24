@@ -9,6 +9,7 @@ import (
 func RegisterAuthRoutes(app *echo.Echo) {
 	// GET
 	app.GET("/verify/email", auth.VerifyEmail)
+	app.GET("/refresh", auth.RefreshToken)
 
 	// POST
 	app.POST("/register", auth.Register)
