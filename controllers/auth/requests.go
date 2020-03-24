@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/quicky-dev/auth-service/db"
 )
 
@@ -79,5 +80,19 @@ func (this *loginRequest) ToUser() *db.User {
 	user.Username = this.Username
 	user.Password = this.Password
 
+	return user
+}
+
+// ----------------------------------- CLAIMS ----------------------------------
+
+type jwtClaims struct {
+	Username string `json:"username"`
+	ID       string `json:"id"`
+	jwt.StandardClaims
+}
+
+func (this *jwtClaims) ToUser() *db.User {
+	user := new(db.User)
+	user.Username = this.Username
 	return user
 }
